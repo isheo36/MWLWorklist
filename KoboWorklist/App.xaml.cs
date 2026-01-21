@@ -96,13 +96,19 @@ namespace KoboWorklist
 
             try
             {
-                // Списък с вашите 10 пациенти (може да идва от БД или масив)
-                var patientsToSearch = new List<(string Id, string Acc)>
+                // Use WorklistItemsProvider to get all current worklist items
+                var worklistProvider = new WorklistItemsProvider(DatabasePath);
+                var worklistItems = worklistProvider.GetAllCurrentWorklistItems();
+
+                // Extract PatientID and AccessionNumber for C-FIND requests
+                var patientsToSearch = new List<(string Id, string Acc)>();
+                foreach (var item in worklistItems)
                 {
-                    ("5201120028", "202509151126001"),
-                    ("1234567890", "202509151126002"),
-                    // ... добавете останалите до 10
-                };
+                    if (!string.IsNullOrEmpty(item.PatientID) && !string.IsNullOrEmpty(item.AccessionNumber))
+                    {
+                        patientsToSearch.Add((item.PatientID, item.AccessionNumber));
+                    }
+                }
 
                 var client = DicomClientFactory.Create(pacsIp, pacsPort, false, localAET, pacsAET);
 

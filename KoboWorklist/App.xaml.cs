@@ -129,7 +129,7 @@ namespace KoboWorklist
                         }
                         else if (response.Status == DicomStatus.Success)
                         {
-                            log.Debug($"Заявката за ID {p.Id} ACCN {p.Acc} приключи успешно.");
+                            log.Debug($"Заявката за PatientID {p.Id} with ACCN {p.Acc} приключи успешно.");
                         }
                     };
 

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Timers;
 using System.Windows;
@@ -25,6 +26,12 @@ namespace KoboWorklist
         private const string DatabasePath = "WorklistItems.db";
 
         public static List<string> Modalities { get; private set; }
+
+        private bool checkPacs = false; // Default: true
+        private string pacsIp = "127.0.0.1"; // Default: 127.0.0.1
+        private int pacsPort = 9104; // Default: 9104
+        private string pacsAET = "PACS"; // Default: STOR
+        private string localAET = "WORKLIST"; // Default: KOBOWORKLIST
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -58,9 +65,20 @@ namespace KoboWorklist
                }))
                .Build();
 
-            WorklistServer.Start(8104, "MODALITY_SCP"); // Default DICOM port
+            var worklistServerPort = configuration.GetValue<int>("WorklistServer:Port", 8104); // Default port: 8104
+            var worklistServerAET = configuration.GetValue<string>("WorklistServer:AET", "MODALITY_SCP"); // Default AET: MODALITY_SCP
 
-            //_timer = new Timer(30000);
+            WorklistServer.Start(worklistServerPort, worklistServerAET); // Default DICOM port
+
+            // PACS configuration
+            checkPacs = configuration.GetValue<bool>("Pacs:CheckPacs", false); // Default: true
+            pacsIp = configuration.GetValue<string>("Pacs:Ip", "127.0.0.1"); // Default: 127.0.0.1
+            pacsPort = configuration.GetValue<int>("Pacs:Port", 9104); // Default: 9104
+            pacsAET = configuration.GetValue<string>("Pacs:AET", "STOR"); // Default: STOR
+            localAET = configuration.GetValue<string>("Pacs:LocalAET", "KOBOWORKLIST"); // Default: KOBOWORKLIST
+
+            log.Debug($"PACS Configuration - CheckPacs: {checkPacs}, IP: {pacsIp}, Port: {pacsPort}, PACS AET: {pacsAET}, Local AET: {localAET}");
+
             _timer.Elapsed += OnTimerElapsed;
             _timer.AutoReset = true;
             _timer.Start();
@@ -70,13 +88,14 @@ namespace KoboWorklist
         {
             log.Debug($"Стартиране на пакетна C-FIND проверка в: {e.SignalTime}");
 
+            if (!checkPacs)
+            {
+                log.Debug("Пакетната C-FIND проверка е изключена в конфигурацията.");
+                return;
+            }
+
             try
             {
-                string pacsIp = "127.0.0.1";
-                int pacsPort = 9104;
-                string pacsAET = "STOR";
-                string localAET = "KOBOWORKLIST";
-
                 // Списък с вашите 10 пациенти (може да идва от БД или масив)
                 var patientsToSearch = new List<(string Id, string Acc)>
                 {

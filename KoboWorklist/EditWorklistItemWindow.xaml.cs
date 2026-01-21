@@ -55,6 +55,17 @@ namespace KoboWorklist
             if (IsValidBulgarianEGN(patientId, out DateTime birthDate) || IsValidBulgarianLNCH(patientId, out birthDate))
             {
                 DateOfBirthTextBox.Text = birthDate.ToString("yyyy-MM-dd");
+
+                // Extract and set the sex based on the 9th digit
+                char sexDigit = patientId[8];
+                if (sexDigit % 2 == 0) // Even digit
+                {
+                    SexComboBox.SelectedValue = "M"; // Male
+                }
+                else // Odd digit
+                {
+                    SexComboBox.SelectedValue = "F"; // Female
+                }
             }
         }
 

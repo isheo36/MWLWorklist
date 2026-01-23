@@ -2,6 +2,7 @@
 // Licensed under the Microsoft Public License (MS-PL).
 
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 
@@ -10,10 +11,12 @@ namespace KoboWorklist.WorklistSCP.Model
     public class WorklistItemsProvider : IWorklistItemsSource
     {
         private readonly string _databasePath;
+        private readonly IConfiguration _configuration;
 
-        public WorklistItemsProvider(string databasePath)
+        public WorklistItemsProvider(string databasePath, IConfiguration configuration)
         {
             _databasePath = databasePath;
+            _configuration = configuration;
         }
 
         public List<WorklistItem> GetAllCurrentWorklistItems()
@@ -27,11 +30,18 @@ namespace KoboWorklist.WorklistSCP.Model
             command.CommandText = "SELECT * FROM WorklistItems";
             using var reader = command.ExecuteReader();
 
+            // Load base UUID from configuration
+            var baseUuid = _configuration.GetValue<string>("BaseUUID", "1.2.840.113619"); // Default base UUID
+
             while (reader.Read())
             {
+                var id = int.Parse(reader["Id"].ToString());
+                var currentYear = DateTime.Now.Year;
+                long timestampInMicroseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
                 var item = new WorklistItem
                 {
-                    Id = int.Parse(reader["Id"].ToString()),
+                    Id = id,
                     AccessionNumber = reader["AccessionNumber"].ToString(),
                     DateOfBirth = DateTime.Parse(reader["DateOfBirth"].ToString()),
                     PatientID = reader["PatientID"].ToString(),
@@ -44,11 +54,9 @@ namespace KoboWorklist.WorklistSCP.Model
                     ExamRoom = reader["ExamRoom"].ToString(),
                     HospitalName = reader["HospitalName"].ToString(),
                     PerformingPhysician = reader["PerformingPhysician"].ToString(),
-                    //ProcedureID = reader["ProcedureID"].ToString(),
-                    //ProcedureStepID = reader["ProcedureStepID"].ToString(),
-                    ProcedureID = (10000 + int.Parse(reader["Id"].ToString())).ToString(),
-                    ProcedureStepID = (20000 + int.Parse(reader["Id"].ToString())).ToString(),
-                    StudyUID = reader["StudyUID"].ToString(),
+                    ProcedureID = (10000 + id).ToString(),
+                    ProcedureStepID = (20000 + id).ToString(),
+                    StudyUID = $"{baseUuid}.{currentYear}.{timestampInMicroseconds}.{id}.1", // Generate StudyUID
                     ScheduledAET = reader["ScheduledAET"].ToString(),
                     ReferringPhysician = reader["ReferringPhysician"].ToString(),
                     ExamDateAndTime = DateTime.Parse(reader["ExamDateAndTime"].ToString())

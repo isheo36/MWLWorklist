@@ -17,8 +17,8 @@ namespace KoboWorklist
         {
             InitializeComponent();
 
-            // Initialize the WorklistItemsProvider with the database path
-            _worklistProvider = new WorklistItemsProvider("WorklistItems.db");
+            // Initialize the WorklistItemsProvider with the database path and configuration
+            _worklistProvider = new WorklistItemsProvider(App.DatabasePath, App.configuration);
 
             // Load the worklist items into the DataGrid
             RefreshWorklist();

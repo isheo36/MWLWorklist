@@ -33,7 +33,8 @@ namespace KoboWorklist.WorklistSCP.Model
                         StudyUID TEXT,
                         ScheduledAET TEXT,
                         ReferringPhysician TEXT,
-                        ExamDateAndTime TEXT
+                        ExamDateAndTime TEXT,
+                        CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
                     )";
                 command.ExecuteNonQuery();
             }

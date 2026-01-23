@@ -3,6 +3,7 @@
 
 using FellowOakDicom.Network;
 using KoboWorklist.WorklistSCP.Model;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace KoboWorklist.WorklistSCP
@@ -12,24 +13,29 @@ namespace KoboWorklist.WorklistSCP
 
         private static IDicomServer _server;
         private static Timer _itemsLoaderTimer;
-        private readonly ILogger _logger;
 
 
-        protected WorklistServer(ILogger<App> logger)
+        protected WorklistServer()
         {
-            _logger = logger;
         }
 
         public static string AETitle { get; set; }
+        public static string DatabasePath { get; private set; }
+        public static IConfiguration Configuration
+        {
+            get; private set;
+        }
 
 
-        public static IWorklistItemsSource CreateItemsSourceService => new WorklistItemsProvider("WorklistItems.db");
+        public static IWorklistItemsSource CreateItemsSourceService => new WorklistItemsProvider(DatabasePath, Configuration);
 
         public static List<WorklistItem> CurrentWorklistItems { get; private set; }
 
         public static void Start(int port, string aet)
         {
             AETitle = aet;
+            DatabasePath = App.DatabasePath;
+            Configuration = App.configuration;
             _server = DicomServerFactory.Create<WorklistService>(port);
             // every 30 seconds the worklist source is queried and the current list of items is cached in _currentWorklistItems
             _itemsLoaderTimer = new Timer((state) =>
